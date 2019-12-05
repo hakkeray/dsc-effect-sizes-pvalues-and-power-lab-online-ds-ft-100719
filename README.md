@@ -25,6 +25,15 @@ To start, import the functions stored in the `flatiron_stats.py` file. It contai
 ```python
 # Your code here; import the contents from flatiron_stats.py
 # You may also wish to open up flatiron_stats.py in a text editor to preview its contents 
+
+```
+
+
+```python
+from flatiron_stats import welch_t, welch_df, p_value_welch_ttest
+
+import numpy as np
+import scipy.stats as stats
 ```
 
 ## Generate random samples
@@ -41,9 +50,10 @@ Before you start running simulations, it will be useful to have a helper functio
 
 
 ```python
-import numpy as np
 def generate_samples(m1, s1, n1, m2, s2, n2):
     # Your code here; have the function create two random samples using the input parameters
+    sample1 = np.random.normal(loc=m1, scale=s1, size=n1)
+    sample2 = np.random.normal(loc=m2, scale=s2, size=n2)
     return sample1, sample2
 ```
 
@@ -63,13 +73,28 @@ sns.set_style('darkgrid')
 
 ```python
 # Your code here
-
 # Pseudo code outline
 # for effect size:
 #     for sample_size:
 #         perform 100 simulations
 #         calculate power
 #         store effect_size, sample_size, power for simulations
+
+effect_sizes = [0, 0.01, 0.1, 0.2, 0.5, 1, 2]
+sample_sizes = list(range(5, 751))
+alpha = 0.05
+power = {}
+
+for effect in effect_sizes:
+    n_p = {}
+    for n in sample_sizes:
+        p_vals = []
+        for i in range(100):
+            sample1, sample2 = generate_samples(m1=5, s1=1, n1=n, m2=5+effect, s2=1, n2=n)
+            p = p_value_welch_ttest(sample1, sample2)
+            p_vals.append(p)
+        n_p[n] = np.sum([1 for p in p_vals if p < alpha])/len(p_vals)
+    power[effect] = n_p
 ```
 
 Now that you've simulated the data, go ahead and graph it! Label the x-axis sample size, the y-axis power, and be sure to include a legend for the various effect sizes.
@@ -77,7 +102,24 @@ Now that you've simulated the data, go ahead and graph it! Label the x-axis samp
 
 ```python
 # Your code here
+df = pd.DataFrame.from_dict(power)
+df.plot(figsize=(12,10))
+plt.title('Power vs. Sample Size for Various Effect Sizes')
+plt.xlabel('Sample Size')
+plt.ylabel('Power')
+plt.legend(title='Effect Size', loc=(1, 0.5))
 ```
+
+
+
+
+    <matplotlib.legend.Legend at 0x1a181c9828>
+
+
+
+
+![png](output_11_1.png)
+
 
 As you can see, it's also typically incredibly difficult (if not impossible) to accurately detect effect sizes below 0.1!
 
